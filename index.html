@@ -8,6 +8,10 @@
       console.log('got a message:');
       console.log(e);
     };
+    setInterval(function() {
+	// Send the message "Hello" to the parent window
+	parent.postMessage('Message from github...', '*');
+},1000);
   </script>
 </head>
 <body>
