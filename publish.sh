@@ -5,6 +5,6 @@ git checkout master
 image=jmlopez-rod
 targetDir=.
 
-docker create -it --name unpack "$image" bash || exit 1
-docker cp unpack:/_site/. "$targetDir" || exit 1
-docker rm -f unpack
+podman create -it --name unpack "$image" bash || exit 1
+podman cp unpack:/_site/. "$targetDir" || exit 1
+podman rm -f unpack
