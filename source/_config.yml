@@ -1,0 +1,24 @@
+title: Trailing Commas
+author: Manuel Lopez
+email: jmlopez.rod@gmail.com
+description: >- # this means to ignore newlines until "baseurl:"
+  Random thoughts and things I find useful.
+baseurl: "" # the subpath of your site, e.g. /blog
+url: "" # the base hostname & protocol for your site, e.g. http://example.com
+github_username:  jmlopez-rod
+
+# Build settings
+theme: jekyll-theme-minimal
+
+exclude:
+  - .sass-cache/
+  - .jekyll-cache/
+  - gemfiles/
+  - Gemfile
+  - Gemfile.lock
+  - node_modules/
+  - vendor/bundle/
+  - vendor/cache/
+  - vendor/gems/
+  - vendor/ruby/
+  - _gems
