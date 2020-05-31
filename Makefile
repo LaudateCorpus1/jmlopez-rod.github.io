@@ -16,3 +16,15 @@ install:
 
 serve:
 	cd source && bundle exec jekyll serve
+
+build:
+	cd source && bundle exec jekyll build
+
+clean:
+	cd source && bundle exec jekyll clean
+
+siteImage:
+	podman build -t jmlopez-rod -f prod.Dockerfile .
+
+publish:
+	./publish.sh
