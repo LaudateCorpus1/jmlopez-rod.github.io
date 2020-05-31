@@ -1,4 +1,3 @@
-jmlopez-rod.github.io
-=====================
+# jmlopez-rod
 
-Collection of information contained in HTML files.
+Check out the `source` branch.
