@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Github Pages | Trailing Commas</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Github Pages" />
+<meta name="author" content="Manuel Lopez" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Setting up your github page with jekyll is relatively simple. This post outlines all the step that were taken to create this site." />
+<meta property="og:description" content="Setting up your github page with jekyll is relatively simple. This post outlines all the step that were taken to create this site." />
+<link rel="canonical" href="/posts/2020/05/31/github-pages.html" />
+<meta property="og:url" content="/posts/2020/05/31/github-pages.html" />
+<meta property="og:site_name" content="Trailing Commas" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-05-31T21:24:47+00:00" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"Manuel Lopez"},"@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/2020/05/31/github-pages.html"},"url":"/posts/2020/05/31/github-pages.html","headline":"Github Pages","dateModified":"2020-05-31T21:24:47+00:00","datePublished":"2020-05-31T21:24:47+00:00","description":"Setting up your github page with jekyll is relatively simple. This post outlines all the step that were taken to create this site.","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=4fcd916ff7957caaa958d5d02533137e0e5d21b7">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Trailing Commas</a></h1>
+        <img src="/assets/img/trailing_commas.png" alt="Logo" />
+
+        <p>Random thoughts and things I find useful.</p>
+
+        <h3 class="view"><a href="/posts/">Posts</a></h3>
+        <h3 class="view"><a href="/about/">About</a></h3>
+      </header>
+      <section>
+
+      <small>31 May 2020</small>
+<h1>Github Pages</h1>
+
+<p class="view">by Manuel Lopez</p>
+
+<p>Setting up your github page with <a href="https://jekyllrb.com/docs/">jekyll</a> is relatively simple. This post
+outlines all the step that were taken to create this site.</p>
+
+<h2 id="isolated-enviroment">Isolated Enviroment</h2>
+
+<p>The first thing to consider is that jekyll has a bit of <a href="https://jekyllrb.com/docs/installation/#requirements">requirements</a>. The goal
+for the project is be able to go to any machine that may have <a href="https://www.docker.com/get-started">docker</a> or
+<a href="https://podman.io/getting-started/">podman</a> to update the site. Since Fedora already came with podman installed 
+we’ll be using <code class="language-plaintext highlighter-rouge">podman</code> commands. Keep in mind that these commands can be
+substituded by <code class="language-plaintext highlighter-rouge">docker</code>.</p>
+
+<p>To avoid having to do any setup in our machines and risking that a setup that
+once worked before breaks when we update dependencies we will create the
+following Dockerfile</p>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">FROM</span><span class="s"> alpine:3.11.6</span>
+
+<span class="k">RUN </span>apk add <span class="nt">--no-cache</span> <span class="se">\
+</span>  build-base <span class="se">\
+</span>  ruby-full <span class="se">\
+</span>  ruby-dev <span class="se">\
+</span>  libxml2-dev <span class="se">\
+</span>  libxslt-dev <span class="se">\
+</span>  git
+
+<span class="k">RUN </span>gem <span class="nb">install </span>jekyll bundler <span class="o">&amp;&amp;</span> bundle config <span class="nt">--global</span> silence_root_warning 1
+
+<span class="k">ENV</span><span class="s"> GEM_HOME=./_gems</span>
+</code></pre></div></div>
+
+<p>First we install ruby along with several dependencies that are necessary to
+install jekyll and some of its plugins. At the moment of writing, the website is
+very simple and it took a bit of google-ing to find out what libraries were needed
+to get it to work under alpine. If the command <code class="language-plaintext highlighter-rouge">gem install jekyll bundler</code>
+fails when you are building the image you may need to do a bit of google
+searching to find out the libraries that need to be installed.</p>
+
+<p>To build the image on your system add the following to a Makefile.</p>
+
+<div class="language-make highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">image</span><span class="o">:</span>
+	podman build <span class="nt">-t</span> jmlopez-rod.github.io .
+</code></pre></div></div>
+
+<p>Then we can run <code class="language-plaintext highlighter-rouge">make image</code>. This will take a while so be patient. After it is
+done we can see the size of each layer in the image by seeing its history</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nv">$ </span>podman <span class="nb">history </span>jmlopez-rod.github.io
+ID             CREATED       CREATED BY                                      SIZE      COMMENT
+f919b980885c   3 hours ago   /bin/sh <span class="nt">-c</span> <span class="c">#(nop) ENV GEM_HOME=./_gems          0B        </span>
+&lt;missing&gt;      3 hours ago   /bin/sh <span class="nt">-c</span> gem <span class="nb">install </span>jekyll bundler <span class="o">&amp;&amp;</span> b...   56.34MB   
+f9fbd7f231f1   2 days ago    /bin/sh <span class="nt">-c</span> apk add <span class="nt">--no-cache</span> build-base r...   225.8MB   
+f70734b6a266   5 weeks ago   /bin/sh <span class="nt">-c</span> <span class="c">#(nop) CMD ["/bin/sh"]               0B        </span>
+&lt;missing&gt;      5 weeks ago   /bin/sh <span class="nt">-c</span> <span class="c">#(nop) ADD file:b91adb67b670d3a...   5.879MB</span>
+</code></pre></div></div>
+
+<h2 id="creating-the-site">Creating the site</h2>
+
+<p>Add the following to the Makefile</p>
+
+<div class="language-make highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">container</span><span class="o">:</span>
+	podman run <span class="se">\</span>
+	  <span class="nt">--rm</span> <span class="se">\</span>
+	  <span class="nt">-it</span> <span class="se">\</span>
+	  <span class="nt">-w</span> /checkout <span class="se">\</span>
+	  <span class="nt">-p</span> 4000:4000 <span class="se">\</span>
+	  <span class="nt">-v</span> <span class="nv">${PWD}</span>:/checkout:z <span class="se">\</span>
+	  jmlopez-rod.github.io <span class="se">\</span>
+	  /bin/sh
+</code></pre></div></div>
+
+<p>Run <code class="language-plaintext highlighter-rouge">make container</code> to run the image and to have a access to a shell. Once
+inside the container you have access to <code class="language-plaintext highlighter-rouge">jekyll</code>. Start the site
+with</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>jekyll new <span class="nb">source</span>
+</code></pre></div></div>
+
+<p>Add these new task to the Makefile</p>
+
+<div class="language-make highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">install</span><span class="o">:</span>
+	<span class="nb">cd source</span> <span class="o">&amp;&amp;</span> bundle <span class="nb">install</span>
+
+<span class="nl">serve</span><span class="o">:</span>
+	<span class="nb">cd source</span> <span class="o">&amp;&amp;</span> bundle <span class="nb">exec </span>jekyll serve
+</code></pre></div></div>
+
+<p>The file <code class="language-plaintext highlighter-rouge">source/Gemfile</code> will eventually specify other modules so we’ll have
+to install them when we move to another machine. At this point we are ready
+to see the changes. Run <code class="language-plaintext highlighter-rouge">make serve</code> and visit <code class="language-plaintext highlighter-rouge">http://localhost:4000</code>.</p>
+
+<h2 id="publishing">Publishing</h2>
+
+<p>To publish we just need to make sure that the contents of <code class="language-plaintext highlighter-rouge">source/_site</code> are
+at the root directory of the repo in the <code class="language-plaintext highlighter-rouge">master</code> branch. For this reason this
+repo has all of the source files in the <code class="language-plaintext highlighter-rouge">source</code> branch.</p>
+
+<p>Add the following to the <code class="language-plaintext highlighter-rouge">Makefile</code>.</p>
+
+<div class="language-make highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="nl">siteImage</span><span class="o">:</span>
+	podman build <span class="nt">-t</span> jmlopez-rod <span class="nt">-f</span> prod.Dockerfile .
+
+<span class="nl">publish</span><span class="o">:</span>
+	./publish.sh
+</code></pre></div></div>
+
+<p>where the files <code class="language-plaintext highlighter-rouge">prod.Dockerfile</code> and <code class="language-plaintext highlighter-rouge">publish.sh</code> have the following contents:</p>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">FROM</span><span class="s"> scratch</span>
+
+<span class="k">COPY</span><span class="s"> source/_site ./_site</span>
+</code></pre></div></div>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="c">#!/bin/bash -x</span>
+
+git checkout master
+
+<span class="nv">image</span><span class="o">=</span>jmlopez-rod
+<span class="nv">targetDir</span><span class="o">=</span><span class="nb">.</span>
+
+podman create <span class="nt">-it</span> <span class="nt">--name</span> unpack <span class="s2">"</span><span class="nv">$image</span><span class="s2">"</span> bash <span class="o">||</span> <span class="nb">exit </span>1
+podman <span class="nb">cp </span>unpack:/_site/. <span class="s2">"</span><span class="nv">$targetDir</span><span class="s2">"</span> <span class="o">||</span> <span class="nb">exit </span>1
+podman <span class="nb">rm</span> <span class="nt">-f</span> unpack
+</code></pre></div></div>
+
+<p>Once the we have the static files we run <code class="language-plaintext highlighter-rouge">make siteImage</code> to store the static
+files in the <code class="language-plaintext highlighter-rouge">jmlopez-rod</code> image. To get those files in the <code class="language-plaintext highlighter-rouge">master</code> branch we
+run <code class="language-plaintext highlighter-rouge">make publish</code>. Make sure to run <code class="language-plaintext highlighter-rouge">chmod +x publish.sh</code> to give the shell
+script exec permissions.</p>
+
+<p>If successful the contents of the <code class="language-plaintext highlighter-rouge">source/_site</code> folder will be root repo
+directory ready to be commited. Add a commit and push to see the changes
+deployed by github.</p>
+
+
+
+
+  <small>tags: <em>github</em> - <em>jekyll</em> - <em>web</em></small>
+
+
+
+      </section>
+      <footer>
+        <p class="view"><a href="https://github.com/jmlopez-rod/jmlopez-rod.github.io"><small>Github</small></a></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>
