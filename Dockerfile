@@ -8,6 +8,6 @@ RUN apk add --no-cache \
     libxslt-dev \
     git
 
-RUN gem install bundler && bundle config --global silence_root_warning 1
+RUN gem install jekyll bundler && bundle config --global silence_root_warning 1
 
 ENV GEM_HOME=./_gems
