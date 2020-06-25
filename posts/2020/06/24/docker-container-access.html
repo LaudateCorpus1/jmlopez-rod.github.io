@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+<!-- Begin Jekyll SEO tag v2.6.1 -->
+<title>Docker Container Access | Trailing Commas</title>
+<meta name="generator" content="Jekyll v3.8.7" />
+<meta property="og:title" content="Docker Container Access" />
+<meta name="author" content="Manuel Lopez" />
+<meta property="og:locale" content="en_US" />
+<meta name="description" content="Making http calls from Docker containers to applications in other containers." />
+<meta property="og:description" content="Making http calls from Docker containers to applications in other containers." />
+<link rel="canonical" href="/posts/2020/06/24/docker-container-access.html" />
+<meta property="og:url" content="/posts/2020/06/24/docker-container-access.html" />
+<meta property="og:site_name" content="Trailing Commas" />
+<meta property="og:type" content="article" />
+<meta property="article:published_time" content="2020-06-24T21:43:47+00:00" />
+<script type="application/ld+json">
+{"author":{"@type":"Person","name":"Manuel Lopez"},"@type":"BlogPosting","mainEntityOfPage":{"@type":"WebPage","@id":"/posts/2020/06/24/docker-container-access.html"},"url":"/posts/2020/06/24/docker-container-access.html","headline":"Docker Container Access","dateModified":"2020-06-24T21:43:47+00:00","datePublished":"2020-06-24T21:43:47+00:00","description":"Making http calls from Docker containers to applications in other containers.","@context":"https://schema.org"}</script>
+<!-- End Jekyll SEO tag -->
+
+    <link rel="stylesheet" href="/assets/css/style.css?v=0e5f6db3c5479ab39cfda34660c0cc451a6a349c">
+    <!--[if lt IE 9]>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html5shiv/3.7.3/html5shiv.min.js"></script>
+    <![endif]-->
+  </head>
+  <body>
+    <div class="wrapper">
+      <header>
+        <h1><a href="/">Trailing Commas</a></h1>
+        <img src="/assets/img/trailing_commas.png" alt="Logo" />
+
+        <p>Random thoughts and things I find useful.</p>
+
+        <h3 class="view"><a href="/posts/">Posts</a></h3>
+        <h3 class="view"><a href="/about/">About</a></h3>
+      </header>
+      <section>
+
+      <small>24 June 2020</small>
+<h1>Docker Container Access</h1>
+
+<p class="view">by Manuel Lopez</p>
+
+<p>Making http calls from Docker containers to applications in other containers.</p>
+
+<h2 id="setup">Setup</h2>
+
+<p>Lets create containers that fire up a python http server.</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~<span class="nv">$ </span><span class="nb">mkdir </span>tmp <span class="o">&amp;&amp;</span> <span class="nb">cd </span>tmp
+~/tmp<span class="nv">$ </span><span class="nb">echo </span>ContainerA <span class="o">&gt;</span> indexA.html <span class="o">&amp;&amp;</span> <span class="nb">echo </span>ContainerB <span class="o">&gt;</span> indexB.html
+</code></pre></div></div>
+
+<p>Create the files <code class="language-plaintext highlighter-rouge">a.Dockerfile</code></p>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">FROM</span><span class="s"> python:3.5.9-alpine3.12</span>
+
+<span class="k">WORKDIR</span><span class="s"> /app</span>
+
+<span class="k">COPY</span><span class="s"> indexA.html index.html</span>
+
+<span class="k">CMD</span><span class="s"> [ "python", "-m", "http.server" ]</span>
+</code></pre></div></div>
+
+<p>and <code class="language-plaintext highlighter-rouge">b.Dockerfile</code></p>
+
+<div class="language-dockerfile highlighter-rouge"><div class="highlight"><pre class="highlight"><code><span class="k">FROM</span><span class="s"> python:3.5.9-alpine3.12</span>
+
+<span class="k">WORKDIR</span><span class="s"> /app</span>
+
+<span class="k">COPY</span><span class="s"> indexB.html index.html</span>
+
+<span class="k">CMD</span><span class="s"> [ "python", "-m", "http.server" ]</span>
+</code></pre></div></div>
+
+<p>Create the images</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker build <span class="nt">-t</span> image-a <span class="nt">-f</span> a.Dockerfile <span class="nb">.</span> <span class="o">&amp;&amp;</span> docker build <span class="nt">-t</span> image-b <span class="nt">-f</span> b.Dockerfile <span class="nb">.</span>
+</code></pre></div></div>
+
+<p>Lets run <code class="language-plaintext highlighter-rouge">image-a</code> on port 8000</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-p</span> 8000:8000 <span class="nt">-it</span> <span class="nt">--rm</span> <span class="nt">--name</span> image_a image-a
+</code></pre></div></div>
+
+<p>and <code class="language-plaintext highlighter-rouge">image-b</code> on port 9000</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>docker run <span class="nt">-p</span> 9000:8000 <span class="nt">-it</span> <span class="nt">--rm</span> <span class="nt">--name</span> image_b image-b
+</code></pre></div></div>
+
+<p><img src="/assets/img/posts/docker-container-access/localhost.png" alt="image" /></p>
+
+<h2 id="issues">Issues</h2>
+
+<p>In the host machine we can open up a terminal and do</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~<span class="nv">$ </span>curl http://localhost:8000
+ContainerA
+~<span class="nv">$ </span>curl http://localhost:9000
+ContainerB
+</code></pre></div></div>
+
+<p>From within the container we should be able to do the same</p>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>~<span class="nv">$ </span>docker <span class="nb">exec</span> <span class="nt">-it</span> image_a sh
+/app <span class="c"># apk add curl</span>
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/main/x86_64/APKINDEX.tar.gz
+fetch http://dl-cdn.alpinelinux.org/alpine/v3.12/community/x86_64/APKINDEX.tar.gz
+<span class="o">(</span>1/3<span class="o">)</span> Installing nghttp2-libs <span class="o">(</span>1.41.0-r0<span class="o">)</span>
+<span class="o">(</span>2/3<span class="o">)</span> Installing libcurl <span class="o">(</span>7.69.1-r0<span class="o">)</span>
+<span class="o">(</span>3/3<span class="o">)</span> Installing curl <span class="o">(</span>7.69.1-r0<span class="o">)</span>
+Executing busybox-1.31.1-r16.trigger
+OK: 10 MiB <span class="k">in </span>28 packages
+/app <span class="c"># curl http://localhost:8000</span>
+ContainerA
+/app <span class="c"># curl http://localhost:9000</span>
+curl: <span class="o">(</span>7<span class="o">)</span> Failed to connect to localhost port 9000: Connection refused
+</code></pre></div></div>
+
+<p>How can we reach the server located in <code class="language-plaintext highlighter-rouge">image_b</code> container?</p>
+
+<blockquote>
+  <p>Use the IP address of the host</p>
+</blockquote>
+
+<div class="language-shell highlighter-rouge"><div class="highlight"><pre class="highlight"><code>/app <span class="c"># curl http://192.168.1.21:9000</span>
+ContainerB
+</code></pre></div></div>
+
+<h2 id="mac-os-x">Mac OS X</h2>
+
+<p>The above does not work on mac. Funny enough, if we obtain the IP address
+from the OS X machine and curl port 9000 from a linux box we obtain the
+file we want but the containers running inside OS X cannot connect to any other
+container. Why?</p>
+
+
+
+  <small>tags: <em>docker</em> - <em>network</em></small>
+
+
+
+      </section>
+      <footer>
+        <p class="view"><a href="https://github.com/jmlopez-rod/jmlopez-rod.github.io"><small>Github</small></a></p>
+      </footer>
+    </div>
+    <script src="/assets/js/scale.fix.js"></script>
+  </body>
+</html>
